@@ -1,0 +1,333 @@
+mongoDB -> mongo means humongous
+
+it internally uses mozilla spider monkey javascript runtime engine
+it is a document database, nosql db
+mongoDB -> contains many database->multiple collections(like tables in sql)-> documents(like a record/row in sql)(no fixed schema)
+
+on installation we gonna get, mongodb shell client and mongodb server
+mongodb server responsible for store our data in db
+mongodb shell client for managing the data in mongodb server(like performing crud operations using this shell)
+mongo shell <-> mongod server (this server maybe local or remote)
+                    ^
+                    |
+                    v
+                mongo atlas
+To launch or start a server -> mongod command is used
+To launch or start a shell -> mongod command is used -> GUI support is also there for mongoDB shell (mongoDB compass, robot3, etx)
+mongo drivers -> by using drivers, our java/python/node/c# any application can communicate with the mongodb database : The MongoDB driver for Node.js allows you to interact with a MongoDB database directly from your Node.js application. It serves as a bridge between your application and the MongoDB database, enabling you to perform operations like inserting, updating, querying, and deleting documents. One popular MongoDB driver for Node.js is mongodb, npm i mongodb. MONGOOSE is built on top of this mongodb driver
+
+Enter mongo shell using mongo :
+Commands : 
+> db.version()
+> db.help() -> gives all the command we can use
+
+admin, config, local are default databases
+admin -> used to store the usernames, passwords, roles like infos. managed by administrator
+config -> to store the config of mongodb server. managed by administrator
+local -> can be used to clone or replica process. managed by administrator
+
+Data formats in mongodb -> JSON which is then converted to BSON because of efficient storage and xtra dataTypes, at the time of retrievaL bson is converted into ejson(extended json) for understanding purpose
+
+Creation of collections and databases:
+use db_name -> create this db when we create a collection in it or insert a document in it
+db.createCollection("name_of_collection")
+show collections
+db.subjects(collection_name).drop()
+db.dropDatabase() -> current db will be deleted
+db.getName() -> gives active db where im in right now
+
+Capped collections -> Limit the collections size, memory or documents. 
+Ex, db.createCollection("name_of_collection",{capped:bool, autoIndex:bool, size:mention_size, max:1000}) // max(how many documents allowed), if mention_size(no. of bytes) exceeded then old docs deleted automatically and space allocated to new documents (based on time-stamp), ** both the max and size is reqd if u want to allow capped. Use cases, jobs portal
+
+BASIC CRUD: 
+
+1. Create a document -> db.collection.insertOne(); db.collection.insertMany(); (pass a array of objects in this) db.collection.insert() (insert either a single or multople document) -> replace collection with collection_name and put the json inside () 
+> db.subjects.insertOne({"title":"cloud","duration":"5hrs"})
+{
+	"acknowledged" : true,
+	"insertedId" : ObjectId("653230830648693cf0a0065f")
+}
+> show collections
+subjects
+
+// make a object first and then insert directly
+> let kval={name:"c", age:30};
+{ "name" : "c", "age" : 30 }
+> db.faltu.insertOne(kval)
+{
+	"acknowledged" : true,
+	"insertedId" : ObjectId("65323e010648693cf0a0066c")
+}
+> db.faltu.find()
+{ "_id" : ObjectId("65323e010648693cf0a0066c"), "name" : "c", "age" : 30 }
+> kval
+{ "name" : "c", "age" : 30 }
+
+//Ordered vs unordered inserts: 
+Ordered insert-> if we are inserting multiple documents and letsay 2nd doc m error h to only 1st vala hi add hoga db m (BY DEFAULT)
+unordered insert-> if we are inserting multiple documents and letsay 2nd doc m error h to use chordkr baki sare insert hojaege (to add this, db.collection.insertMany([], {ordered:false});)
+
+// collection_name and field names within documents will be case sensitive
+
+
+2. Read a document
+db.collection.find() (// pura collection ajaega), db.collection.find({key:value}) (all documents with same key as key), db.collection.findOne({key:value}) (we get first doc with key as key)
+> db.subjects.find().pretty() 
+{ "_id" : ObjectId("653230830648693cf0a0065f"), "title" : "cloud", "duration" : "5hrs" }
+
+
+3. Update a document -> db.collection.updateOne(); db.collection.updateMany(); db.collection.replaceOne() -> replace collection with collection_name and put the json inside () 
+if matched doc is not there then it'll not do anything, else if it is there but the key to update is not there, it'll create one, else update
+> db.subjects.updateOne({title:"cloud"},{title:"cloud computing"})
+!!!! this wont work as we need some atomic operator to update a value, like $set !!!!
+> db.subjects.updateOne({title:"cloud"},{$set:{title:"cloud computing"}})
+{ "acknowledged" : true, "matchedCount" : 1, "modifiedCount" : 1 }
+> db.subjects.find()
+{ "_id" : ObjectId("653230830648693cf0a0065f"), "title" : "cloud computing", "duration" : "5hrs" }
+
+
+4. Delete a document -> db.collection.deleteOne(); db.collection.deleteMany(); -> replace collection with collection_name and put the json inside () 
+> show collections
+subjects
+> db.subjects.deleteOne({title:"cloud computing"})
+{ "acknowledged" : true, "deletedCount" : 1 }
+> db.subjects.find()
+> 
+
+
+Impport JSON in mongoDB -> files must be 16mb or less
+mongoimport path/jsonfile.json -d database_name -c collection_name // age array k andar nhi h 
+mongoimport path/jsonfile.json -d database_name -c collection_name --jsonArray // age array of objects h to
+
+Export JSON from mongoDB to a file 
+mongoexport -d database_name -c collection_name -o path/jsonfile.json
+
+
+Comparison operator:
+$eq->equals to, 
+$ne-> not equals to, 
+$gt->greater than, 
+$gte->greater than equals to, 
+$lt-> less than, 
+$lte-> less than equals to, 
+$in-> in,  
+$nin -> not in
+ex, db.collection.find({key:{$eq:value}}), 
+db.collection.find({key:{$gte:value}}), 
+db.collection.find({key:{$in:[val1,val2,val3]}})
+
+
+Cursors: used to efficiently retrieve large result sets from queries, providing control over data retrieval process, default batch size (that is shown at one time is 101 docs)
+cursor methods: count(), limit(), skip(), sort()
+ex, db.collection.find({key:{$eq:value}}).count(), 
+db.collection.find({key:{$eq:value}}).skip(2) // means skip top2 guys and show, 
+db.collection.find({key:{$eq:value}}).limit(5) //show firs 5 only, 
+db.collection.find({key:{$eq:value}}).limit(5).sort({price:1}) // sort by price and 1 means asc whereas -1 means descending
+db.products.find().sort({ price: -1 }).limit(1).skip(1) -> ** gives 2nd largest data acc to price
+
+
+Logical operator:
+$and : provide and of two or more conditions , only matches if all conditions are true, {$and:[{condition 1},{condition 2},...,{condition n}]}
+$or : provide or of two or more conditions, only matches if any one of the conditions are true , {$or:[{condition 1},{condition 2},...,{condition n}]}
+$not : provide not of a condition, { field: { $not: { operator:value } } } // this is all about inverting the results
+$nor : or k result k chordkr baki sb dikhado, means all the conditions false ho jb
+
+Ex, find products with price>100 and name="Diamond ring"
+sol, db.collection.find({$and:[{price:{$gt:100}},{name:{$eq:'Diamond ring'}}]}) <--this can be written also as--> db.collection.find({ price:{$gt:100}, name:'Diamond ring' }) // bydefault and hi hota h 
+Ex, find products with price>100 or name="Diamond ring"
+sol, db.collection.find({$or:[{price:{$gt:100}},{name:{$eq:'Diamond ring'}}]})
+Ex, find products with price not equals to 100
+sol, db.collection.find({price:{$not:100}})
+Ex, find products with price not greater than or equals to 100
+sol, db.collection.find({price:{$not:{$gt:100}}})
+
+
+Complex expressions:
+$expr allows using aggregation expressions within a query, useful when u need to compare fields from the same document 
+ex/usecase, find sales where (qtty*price) is greater than targetPrice
+soln, db.sales.find({ $expr: { $gt: [ {$multiply:['$col1/qtty','$col2/price']}, '$targetPrice' ] } })
+ex/usecase, find sales where (qtty+price) is greater than targetPrice
+soln, db.sales.find({ $expr: { $gt: [{$add:['$col1/qtty','$col2/price']},'$targetPrice'] } }) // array k andar Comparisons vale column dede
+
+
+Elements operator:
+$exists  checks whether a field exists or not in a document. Ex, db.products.find({ price: { $exists: true }, price: {$gt:500} }) -> return all documents in the products collection where the price field exists.
+$type allows you to filter documents based on their field types. Ex, db.products.find({ price: { $type: "number" } }) -> return all documents in the products collection where the price field is of type number
+$size is used to match the number of elements in an array. Ex, db.products.find({ tags: { $size: 2 } }) -> return all documents in the products collection where the tags field is an array with exactly 2 elements.
+
+
+Projection:
+to include specific fields, use Projection with a value 1 for the fields u want 
+to exclude specific fields, use Projection with a value 0 for the fields u don't want 
+but can't include and exclude at the same query
+ex, db.comments.find({'comments':{$size:2}, {'comments':1}}) // we'll only get comments field and that comments field which has 2 value in the array
+
+
+Embedded documents:
+let say my data stored is: comments: [ {user:'Lily'}, {user:'Goly'} ], metadata: { views:1200, likes:56 }
+ex, db.comments.find({'comments.user':'Lily'}) // give me Lily's comment
+ex, db.comments.find({'metadata.views':{ $gt:1000 }})  // find metadata with views>1000
+ex, db.comments.find({$and:[ {'comments.user':'Henry'},{'metadata.likes':{$gt>50}} ]}) or db.comments.find({'comments.user':'Henry','metadata.likes':{$gt>50}})   // find out doc where user in comments is 'henry' and also like > 50
+ex, db.comments.find({'comments.user':{$in:['alice','vinod']},{'comments':1}})  // returns comments array for documents where either 'alice' or 'vinod' has commented.
+
+
+$all vs $elemMatch
+$all return the document where value of a field is an array that contains all the specified elems. {field:{$all:[val1,val2,val3...]}} // return comments array with user alice and vinod
+$elemMatch operator matches docs that contains an array field with atleast one elem that matches all specified query criteria. {field:{$elemMatch:{query1,query2...}}}  // return comments where user is vinod and text is 'very nice product' , use case for elemMatch -> db.comments.find({'comments':{$elemMatch:{'user':'vinod','text':'very nice product'}}})
+
+
+Advanced Update operations
+updateOne()-> db.collection.updateOne(
+    {filter}, //filter applied
+    {$set:{ newField:val}} // field to update with new value
+    ); //updates only the first document that matches the specified filter criteria,
+updateMany()-> db.collection.updateMany(
+    { "status": "active" }, 
+    { $set: { "status": "inactive" }}
+    ); // updates all documents that match the specified filter criteria
+ex, update a price to 45 if id is 123 -> db.collection.updateOne({id:123},{$set:{'price':45}});
+removing a field ->  db.collection.updateOne(
+    { _id: 1 }, // Filter criteria to identify the document
+    { $unset: { nameOfFieldToRemove: ""/1 }}  // Use an empty string as the value for $unset
+    ); // use the $unset operator in an update operation 
+    // ex, removing isAvailable field with deleted true : db.collection.updateMany({deleted:true},{$unset:{isAvailable:1}})
+renaming a field -> db.collection.updateOne(
+  { _id: 1 }, // Filter criteria to identify the document
+  { $rename: { oldFieldName: "newFieldName" } }
+);  // ex, renaming product with price 123 from isFeatured to isFeature : db.collection.updateMany({price:123},{$rename:{'isFeatured':'isFeature'}})
+adding in array-> $push operator appends an item to the end of an array -> db.collection.updateOne(
+  { _id: 1 }, // Filter criteria to identify the document
+  { $push: { fieldName: newValue } } // fieldName is the array field, newValue is the value to add
+);
+adding if not exist in array -> $addToSet operator adds an item to an array only if it does not already exist in the array. If the field does not exist, $addToSet will create an array field. -> db.collection.updateOne(
+  { _id: 1 }, // Filter criteria to identify the document
+  { $addToSet: { fieldName: newValue } } // fieldName is the array field, newValue is the value to add
+);
+removing items from an array -> $pull operator removes all occurrences of a value from an array. -> db.collection.updateOne(
+  { _id: 1 }, // Filter criteria to identify the document
+  { $pull: { fieldName: valueToRemove } } // fieldName is the array field, valueToRemove is the value to remove
+); 
+$pullAll operator removes all occurrences of multiple values from an array. -> db.collection.updateOne(
+  { _id: 1 }, // Filter criteria to identify the document
+  { $pullAll: { fieldName: [value1, value2, ...] } } // fieldName is the array field, value1, value2, etc. are the values to remove
+);
+Removes the last element from the array -> $pop with 1 -> db.collection.updateOne(
+  { _id: 1 }, // Filter criteria to identify the document
+  { $pop: { fieldName: 1 } } // fieldName is the array field, 1 means pop the last element
+);
+Removes the first element from the array -> $pop with -1 -> db.collection.updateOne(
+  { _id: 1 }, // Filter criteria to identify the document
+  { $pop: { fieldName: -1 } } // fieldName is the array field, -1 means pop the first element
+);
+
+updating embedded documents
+db.collection_name.updateOne(
+    {filer},
+    {$set:{'arrayField.$.text':'Updated text'}} // this .$. is acting like a positional operator where it is replced by the index no. of text
+)
+
+
+Delete a document (it is different from deleting a field which we saw earlier that was removing a field, unset)
+db.collection_name.deleteOne({id:2})
+db.collection_name.deleteMany({price:55})
+
+
+Indexes in mongoDB -> specialized data structures that optimize data retrievaL in mongoDB
+Indexes are separate from collections and multiple Indexes can exist per collection
+->faster querying ->efficient sorting ->improved aggregation(chaining method) ->indexing on multiple fields
+to check runtime details of the query use .explain() function after query or .explain('executionSuccess')
+db.products.createIndex({field:1}) // storing indexes in ascending order if specified 1 and descending if specified -1. 
+db.collection.getIndexes() //to get all indexes
+db.collection.dropIndex({field:1}) // by default _id is the index there.
+don't use indexes on rarely used fields, indexing small collections(no benefit)
+
+
+Aggregation in mongoDB -> process of performing transformations on documents and combining them to produce computed results
+consists of multiple pipeline stages, each performing a specific operation on input Data
+$match -> similar to the query used as find argument in .find(), filters documents based on specified conditions
+ex, db.products.aggregate([
+  {$match:{comapny:12}}
+])
+/ In find we do: db.products.find({price:12})
+Ex, db.products.aggregate.([{$match:{name='Tuna'}}]) retrieve all products with name=Tuna using aggregate
+
+$group -> groups documents by specified fields and performs aggregate operations on grouped data.
+syntax: {
+  _id:<expression> // group key
+  <field1>:{ <accumulator>:<expression1> } //field1 means new field_name and accumulator is some operator
+}
+ex, db.products.aggregate([
+  {$group:{ _id:{comp:'$company}, totalProducts:{$sum:1} }} // this group products by company and calculates the total no. of products for each company
+])
+ex, db.products.aggregate([
+  {$group:{ _id:{comp:'$company'}, totalProducts:{$sum:'$price'} }} // this group products by company and calculates the total price of products for each company
+])
+pipelining:
+ex, db.products.aggregate([
+  {$match:{$price:{$gt:100}}}, //first filter all the products with price>100
+  {$group:{ _id:{comp:'$company}, totalProducts:{$sum:'$price'} }} // this group products by company and calculates the total price of products for each company
+])
+ex, find the quantity = 5, group them with same quantity and find the avg price
+soln, db.products.aggregate([
+  {$match:{quantity:{$eq:5}}}/{$match:{quantity5}},
+  {$group:{_id:'$quantity',priceAvergae:{$avg:'$price' }}}
+])
+
+$sort -> sorting in asc or desc acc to a particular field
+ex, db.products.aggregate([
+  condition1,
+  condition2,
+  {
+    $sort:{$ptice:1} //ascending price
+  }
+])
+$project -> passes along the documents with the requested fields only to the next stage in pipeline, reshapes documents, includes or excludes fields and perform operations on fields
+syntax: {$project:{<field>:<expression>,...}}
+ex, db.products.aggregate([
+  {$project:{name:1,price:1,discountedPrice:{$multiply:['$price',0.8]}}}
+  // only show the name and price field and calculates discountedPrice
+])
+
+$filter -> filters elements of an array based on specified conditions
+syntax: {
+  $project: {
+    <field>:{
+      $filter:{
+        input:'$<array>', // konse arry k field pr filter lgana h 
+        as:'<variable>', // specifying the alias for it 
+        condition:<expression> // then filter condition
+      }
+    }
+  }
+}
+ex, db.collection.aggregate([
+  $project:{
+    name:1,
+    filterValue:{
+      $filter:{
+        input:'$values',
+        as:'val',
+        cond: {$gt:['$$val',30] //means val should be greaterThan 30 and values should be accessed using double dollar}
+      }
+    }
+  }
+])
+
+
+MONGODB atlas
+we have our organization -> clusters -> projects -> database(user auth) -> collection -> documents
+clusters-> group of interconnected servers(nodes) that work togerher to store and manage data
+
+node.js with mongodb driver ( a driver is used to connect our backend with our databse )
+-> connect to mongodb server, use mongoClient class and valid uri to establish a connection to mongodb server
+-> select a database using client.db(db_name) method
+-> access a collection using db.collection(collection_name) method
+-> perform crud operations
+-> finally client.close()
+
+mongoose is a odm(object data modelling) library for mongodb and nodejs, makes mongodb interaction more straightforward and organized.
+It provides a structured, schema-based data modelling approach.
+why mongoose -> structured schema, validation, relationship, middleware, can write complex queries 
+1. connect to db using mongoose.connect(uri)
+2. create a schema using new mongoose.schema({...})
+3. create a model -> const Product(collection_name) = new mongoose.model('collection_name',productSchema)
