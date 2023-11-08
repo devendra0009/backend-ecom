@@ -2,10 +2,10 @@ import User from '../model/User.js';
 import getDataUri from '../utils/fileuri.js';
 import cloudinary from 'cloudinary';
 import crypto from 'crypto';
-import bcrypt from 'bcrypt';
 import { sanitizeUser } from '../services/commonFunc.js';
+import bcrypt from 'bcrypt';
+// import { sanitizeUser } from '../services/commonFunc.js';
 import jwt from 'jsonwebtoken';
-const SECRET_KEY = 'SECRET_KEY';
 
 export const fetchAllUsers = async (req, res) => {
   try {
@@ -19,17 +19,20 @@ export const fetchAllUsers = async (req, res) => {
 export const createUser = async (req, res, next) => {
   try {
     const userData = req.body;
-
-    // image upload to cloudinary
-    const file = req.file;
-    const fileUri = getDataUri(file);
-    const myCloud = await cloudinary.v2.uploader.upload(fileUri.content);
-    userData.img = myCloud.secure_url;
-    // console.log(userData.img);
+    
+    const existingUser = await User.findOne({ email: userData.email });
+    if (existingUser)
+    return res.status(409).json({ msg: 'User already Exists!' });
+  
+  // image upload to cloudinary
+  const file = req.file;
+  const fileUri = getDataUri(file);
+  // console.log(fileUri);
+  const myCloud = await cloudinary.v2.uploader.upload(fileUri.content);
+  userData.img = myCloud.secure_url;
+  // console.log(userData.img);
 
     // password hasing
-    // const salt = crypto.randomBytes(128).toString('base64');
-    // const hashedPassword = crypto.pbkdf2Sync(userData.password, salt, 10000, 512, 'sha512');
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(userData.password, salt);
     // console.log(hashedPassword);
@@ -37,14 +40,14 @@ export const createUser = async (req, res, next) => {
     // create req
     const newUser = new User({ ...userData, password: hashedPassword });
     const savedUser = await newUser.save();
-    delete savedUser['password']; // cuz i dont wanna pass it to frontend
 
     // create session after signup -> this calls serializeUser and creates a session by passing this sanitizeUser
+    // yha pe req.login session manually bnana pdega signup k vqt because loginUser krte vqt to vo passport strategy use krrha h but yha nhi.
     req.login(savedUser, (err) => {
       if (err) res.status(400).json(err);
       else {
-        console.log(savedUser);
-        const token = jwt.sign(sanitizeUser(savedUser), SECRET_KEY);
+        // console.log(savedUser);
+        const token = jwt.sign(sanitizeUser(savedUser), process.env.SECRET_KEY);
         // console.log(token);
         res
           .cookie('jwt', token, {
@@ -52,7 +55,7 @@ export const createUser = async (req, res, next) => {
             httpOnly: true,
           })
           .status(201)
-          .json({ token });
+          .json(sanitizeUser(savedUser));
       }
     });
   } catch (error) {
@@ -81,37 +84,64 @@ export const deleteUserById = async (req, res) => {
     res.status(500).json({ msg: error.message });
   }
 };
-export const fetchUserByEmail = async (req, res) => {
-  // console.log(req);
-  // console.log(req,"hi");
-  try {
-    res
-      .cookie('jwt', req.user, {
-        expires: new Date(Date.now() + 3600000),
-        httpOnly: true,
-      })
-      .status(200)
-      .json(req.user);
-  } catch (error) {
-    console.log(error);
-    res.status(500).json({msg:error.msg})
-  }
+export const loginUser = async (req, res) => {
+  const user = req.user;
+  // console.log(user);
+  res
+    .cookie('jwt', req.user.token, {
+      expires: new Date(Date.now() + 3600000),
+      httpOnly: true,
+    })
+    .status(200)
+    .json(user); // req.user is created by passport automatically when user is authenticated
+  // try {
+  //   const existingUser = await User.findOne({ email: req.body.email });
+  //   if (!existingUser) return res.status(404).json({ msg: 'User not found' });
+  //   const passComp = await bcrypt.compare(
+  //     req.body.password,
+  //     existingUser.password
+  //   );
+  //   if (!passComp) {
+  //     return res.status(401).json({ msg: 'invalid credentails' });
+  //   }
+  //   const user = { id: existingUser._id };
+  //   const token = createJwt(user);
+  //   // console.log(token);
+  //   res.cookie('token', token, { httpOnly: true });
+  //   return res.status(200).json({ msg: 'Logged in Successfull' });
+  // } catch (error) {
+  //   // console.log(error);
+  //   res.status(500).json({ msg: error.msg });
+  // }
+};
+
+export const logoutUser = async (req, res) => {
+  console.log('logout',req);
+  req.cookies=null;
+  console.log('logout',req);
+  res
+    .cookie('jwt', null, {
+      expires: new Date(Date.now()),
+      httpOnly: true,
+    })
+    .sendStatus(200);
+  
 };
 export const checkUser = async (req, res) => {
-  console.log(req.user);
+  // console.log(req);
   // res.status(200).json(req.user);
   try {
     // console.log(req);
-    res.status(200).json({ data: req.user });
+    res.status(200).json(req.user);
   } catch (error) {
     // console.log(error);
-    res.status(400).json({ msg: error.message });
+    res.status(401).json({ msg: error.message });
   }
 };
 export const fetchUserById = async (req, res) => {
   // fetch user by userId
   try {
-    console.log(req.user,"fetuserbyid");
+    console.log(req.user, 'fetuserbyid');
     const { id } = req.user;
     const existingUser = await User.findById(id);
     if (!existingUser) res.status(404).json({ msg: 'User not Exists' });
