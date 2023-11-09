@@ -27,10 +27,11 @@ import cookieParser from 'cookie-parser';
 import { fileURLToPath } from 'url';
 import path, { dirname } from 'path';
 import dotenv from 'dotenv';
+import { loginUser } from './controllers/User.js';
 
 // dotconfig
 dotenv.config();
-console.log(process.env.SECRET_KEY);
+// console.log(process.env.SECRET_KEY);
 
 // db connection
 dbConnect();
@@ -46,7 +47,11 @@ opts.secretOrKey = process.env.SECRET_KEY;
 
 // clodinary
 // console.log(process.env.CLOUD_CONFIG, 'hi');
-cloudinary.v2.config({cloud_name: process.env.CLOUD_NAME,api_key: process.env.API_KEY,api_secret: process.env.API_SECRET});
+cloudinary.v2.config({
+  cloud_name: process.env.CLOUD_NAME,
+  api_key: process.env.API_KEY,
+  api_secret: process.env.API_SECRET,
+});
 // cloudinary.v2.config({cloud_name: 'dap8lkkgr',api_key: '186324916488615',api_secret: 'd-JYnEvZwzHZF-0aQ2lVeAnTtn0'});
 
 // middlewares **********
@@ -55,9 +60,9 @@ cloudinary.v2.config({cloud_name: process.env.CLOUD_NAME,api_key: process.env.AP
 server.use(cookieParser());
 
 // put build of frontend in the server so that cors error na aae
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-server.use(express.static(path.join(__dirname, 'build')));
+// const __filename = fileURLToPath(import.meta.url);
+// const __dirname = dirname(__filename);
+// server.use(express.static(path.join(__dirname, 'build')));
 
 // session
 server.use(
@@ -107,6 +112,7 @@ passport.use(
     try {
       console.log(username, password);
       const existingUser = await User.findOne({ email: username });
+      console.log(existingUser, 'euse');
       if (!existingUser) {
         // console.log(existingUser);
         return done(null, false, { message: 'invalid credentials' }); // null means no error, false means no matchnig user found
@@ -114,6 +120,7 @@ passport.use(
         // return done(error);
       }
       const passComp = await bcrypt.compare(password, existingUser.password);
+      console.log(passComp);
       if (!passComp) {
         return done(null, false, { message: 'invalid credentials' });
       } else {
