@@ -60,9 +60,9 @@ cloudinary.v2.config({
 server.use(cookieParser());
 
 // put build of frontend in the server so that cors error na aae
-// const __filename = fileURLToPath(import.meta.url);
-// const __dirname = dirname(__filename);
-// server.use(express.static(path.join(__dirname, 'build')));
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+server.use(express.static(path.join(__dirname, 'build')));
 
 // session
 server.use(
@@ -97,7 +97,7 @@ server.use('/carts', isAuth(), cartsRouter);
 server.use('/orders', isAuth(), ordersRouter);
 
 server.get('*', (req, res) => {
-  res.send('Hello, user! I am ready !!');
+  res.send(path.join(__dirname, 'build', 'index.html'));
 });
 
 // // Passport stategies

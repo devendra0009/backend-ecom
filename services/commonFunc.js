@@ -20,6 +20,7 @@ export const sanitizeUser = (user) => {
 
 export const cookieExtractor = function (req) {
   var token = null;
+  console.log("reqstart",req.cookies,req.cookie,"reqover");
   if (req && req.cookies) {
     token = req.cookies['jwt'];
   }

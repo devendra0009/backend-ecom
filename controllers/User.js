@@ -19,18 +19,18 @@ export const fetchAllUsers = async (req, res) => {
 export const createUser = async (req, res, next) => {
   try {
     const userData = req.body;
-    
+
     const existingUser = await User.findOne({ email: userData.email });
     if (existingUser)
-    return res.status(409).json({ msg: 'User already Exists!' });
-  
-  // image upload to cloudinary
-  const file = req.file;
-  const fileUri = getDataUri(file);
-  // console.log(fileUri);
-  const myCloud = await cloudinary.v2.uploader.upload(fileUri.content);
-  userData.img = myCloud.secure_url;
-  // console.log(userData.img);
+      return res.status(409).json({ msg: 'User already Exists!' });
+
+    // image upload to cloudinary
+    const file = req.file;
+    const fileUri = getDataUri(file);
+    // console.log(fileUri);
+    const myCloud = await cloudinary.v2.uploader.upload(fileUri.content);
+    userData.img = myCloud.secure_url;
+    // console.log(userData.img);
 
     // password hasing
     const salt = await bcrypt.genSalt(10);
@@ -86,14 +86,13 @@ export const deleteUserById = async (req, res) => {
 };
 export const loginUser = async (req, res) => {
   const user = req.user;
-  // console.log(user);
-  res
-    .cookie('jwt', req.user.token, {
-      expires: new Date(Date.now() + 3600000),
-      httpOnly: true,
-    })
-    .status(200)
-    .json(user); // req.user is created by passport automatically when user is authenticated
+  console.log(req.user, 'in login user');
+  res.cookie('login',req.user.token)
+  res.cookie('jwt', req.user.token, {
+    expires: new Date(Date.now() + 3600000),
+    httpOnly: true
+  });
+  res.status(200).json(user); // req.user is created by passport automatically when user is authenticated
   // try {
   //   const existingUser = await User.findOne({ email: req.body.email });
   //   if (!existingUser) return res.status(404).json({ msg: 'User not found' });
@@ -116,16 +115,15 @@ export const loginUser = async (req, res) => {
 };
 
 export const logoutUser = async (req, res) => {
-  console.log('logout',req);
-  req.cookies=null;
-  console.log('logout',req);
+  console.log('logout', req);
+  req.cookies = null;
+  console.log('logout', req);
   res
     .cookie('jwt', null, {
       expires: new Date(Date.now()),
       httpOnly: true,
     })
     .sendStatus(200);
-  
 };
 export const checkUser = async (req, res) => {
   // console.log(req);
