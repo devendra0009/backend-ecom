@@ -96,9 +96,9 @@ server.use('/brands', isAuth(), brandsRouter);
 server.use('/carts', isAuth(), cartsRouter);
 server.use('/orders', isAuth(), ordersRouter);
 
-// server.get('*', (req, res) => {
-//   res.sendFile(path.join(__dirname, 'build', 'index.html'));
-// });
+server.get('*', (req, res) => {
+  res.send('Hello, user! I am ready !!');
+});
 
 // // Passport stategies
 passport.use(
