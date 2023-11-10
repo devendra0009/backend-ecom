@@ -115,9 +115,9 @@ export const loginUser = async (req, res) => {
 };
 
 export const logoutUser = async (req, res) => {
-  console.log('logout', req);
+  // console.log('logout', req);
   req.cookies = null;
-  console.log('logout', req);
+  // console.log('logout', req);
   res
     .cookie('jwt', null, {
       expires: new Date(Date.now()),

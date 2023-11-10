@@ -73,8 +73,7 @@ server.use(
   })
 );
 server.use(passport.initialize());
-server.use(passport.session());
-// server.use(passport.authenticate('session'));
+server.use(passport.session()); // server.use(passport.authenticate('session')); -> both are same, actually this is authenticating the session made by express
 
 //cors
 let corsOptions = {
@@ -97,7 +96,7 @@ server.use('/carts', isAuth(), cartsRouter);
 server.use('/orders', isAuth(), ordersRouter);
 
 server.get('*', (req, res) => {
-  res.send(path.join(__dirname, 'build', 'index.html'));
+  res.sendFile(path.join(__dirname, 'build', 'index.html')); // to enable react routing
 });
 
 // // Passport stategies
